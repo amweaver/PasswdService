@@ -8,7 +8,7 @@ def GetContents(pathtofile, path) -> typing.List:
     with open(pathtofile, "r") as file_object:
         for line in file_object:
             if line.strip() != "":
-                lines.append(line.strip())
+                lines.append(line.rstrip())
     if path.startswith('/users'):
         return passwdParser(lines)
     if path.startswith('/groups'):
