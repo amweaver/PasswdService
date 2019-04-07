@@ -1,6 +1,10 @@
 import typing
+import re
+from Utils import regexFix
 
-def passwdParser(lines) -> typing.List:
+# TODO: check for NUL bytes! https://stackoverflow.com/questions/18970830/how-to-find-null-byte-in-a-string-in-python
+
+def passwdParser(lines, query) -> typing.List:
     elements = []
     for line in lines:
         #print(line)
@@ -9,7 +13,8 @@ def passwdParser(lines) -> typing.List:
         if passwdValidate(values):
             entry = {"name": values[0], "uid": values[2], "gid": values[3],
                     "comment": values[4], "home": values[5], "shell": values[6]}  # there has to be a better way to parse this
-            elements.append(entry)  # is there a way I can order it like it is in the specification?
+            if queryCompare(entry, query):
+                elements.append(entry)  # is there a way I can order it like it is in the specification?
     return elements
 
 def passwdValidate(line) -> bool:
@@ -44,14 +49,15 @@ def passwdValidate(line) -> bool:
     return True
 
 # members must be separated by commas, and I must make them a list
-def groupParser(lines) -> typing.List:
+def groupParser(lines, query) -> typing.List:
     elements = []
     for line in lines:
         values = line.split(":")
         #print(values)
         if groupValidate(values):
             entry = {"name": values[0], "gid": values[2], "members": values[3].split(",")} # there has to be a better way to parse this
-            elements.append(entry) # is there a way I can order it like it is in the specification?
+            if queryCompare(entry, query):
+                elements.append(entry)  # is there a way I can order it like it is in the specification?
     return elements
 
 def groupValidate(line) -> bool:
@@ -72,6 +78,55 @@ def groupValidate(line) -> bool:
         member = member.strip()
         if member and ((not member.isalnum()) or len(member) > 32 or member.isdigit()):  # check that user is actually valid
             print("User field is not valid")
-            print(member)
+            ## print(member)
             return False
     return True
+
+
+def queryCompare(entry, query) -> bool:
+    for key in query:
+        if isinstance(query[key], list):
+            if not entry[key] or not isinstance(entry[key], list):
+                return False
+            #print("We have a list!")
+            for member in query[key]:
+                if entry[key].count(member) == 0:
+                    return False
+        elif entry[key] != query[key]:
+            return False
+        #print(str(entry[key]) + " equals " + str(query[key]))
+    return True
+
+# this should work, but debugging it will be very hard
+def queryRegex(query) -> typing.Dict:
+    match = re.match('\A/users' ## starts with users
+                     '(/query%3F' ## optional query with the following format:
+                     '(?P<name>name=\w+)?' ## name field, optional match
+                     '(?(name)&(?=.))' ## if name is matched, add a & IF there are more fields
+                     '(?P<uid>&uid=\w+)?' ## uid field, optional match
+                     '(?(uid)&(?=.))' ## if uid is matched, add a & IF there are more fields
+                     '(?P<gid>&gid=\w+)?' ## gid field, optional match
+                     '(?(gid)&(?=.))' ## if gid is matched, add a & IF there are more fields
+                     '(?P<comment>&comment=.+)?' ## comment field, optional match
+                     '(?(comment)&(?=.))' ## if comment is matched, add a & IF there are more fields
+                     '(?P<home>&home=[/\\\w]+)?' ## home field, optional match
+                     '(?(home)&(?=.))' ## if home is matched, add a & IF there are more fields
+                     '(?P<shell>&shell=[/\\\w]+)?' ## shell field. Allows /\ and chars. Does not add & after match
+                     ')?\Z', # end of the optional query,  end of string
+                     query)
+    if match:
+        return regexFix(match.groupdict())
+    else:
+        match = re.match('\A/groups'  # start with groups
+                         '(/query%3F'  # optional query with the following format
+                         '(?P<name>name=\w+)?'  # name field, optional match
+                         '(?(name)&(?=.))'  # if name is matched, add a & IF there are more fields
+                         '(?P<gid>gid=[/\w]+)?'  # gid field, optional match
+                         '(?(gid)&(?=.))'  # if gid is matched, add a & IF there are more fields
+                         '(?P<member>(member=\w+&?)+)?)'  # member field. End with & optionally. Can match multiple times
+                         '?(?<!&)\Z',  # end optional field of query. & is not last char, end of string here
+                         query)
+        if match:
+            #print("we did it reddit")
+            return regexFix(match.groupdict())
+    return {}

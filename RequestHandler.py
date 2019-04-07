@@ -16,12 +16,12 @@ class RequestHandler(BaseHTTPRequestHandler):
         # Check path
         if self.path.startswith('/users'):
             response = GetContents('e:/Andrew Documents/etcpasswd.txt', self.path)
-            print("Looking for users, eh?")
+            ## print("Looking for users, eh?")
             self._set_headers()
             self.wfile.write(str(response).encode())
             return
         elif self.path.startswith('/groups'):
-            print("Looking for groups? Me too")
+            ## print("Looking for groups? Me too")
             response = GetContents('e:/Andrew Documents/etcgroup.txt', self.path)
             self._set_headers()
             self.wfile.write(str(response).encode())
