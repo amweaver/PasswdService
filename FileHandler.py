@@ -4,18 +4,20 @@ from Parser import queryRegex
 from Parser import passwdParser
 from Parser import groupParser
 
-def GetContents(pathtofile, path) -> typing.List:
+def GetContents(pathtofile, requestpath) -> typing.List:
     lines = []
+    if os.stat(pathtofile).st_size == 0:
+        return ['error: path file is empty. Users: contact server administrator about this issue']
     with open(pathtofile, "r") as file_object:
         for line in file_object:
             if line.strip() != "":
                 lines.append(line.rstrip())
-    if path.startswith('/users'):
-        query = queryRegex(path)
+    if requestpath.startswith('/users'):
+        query = queryRegex(requestpath)
         ##print(query)
         return passwdParser(lines, query)
-    if path.startswith('/groups'):
-        query = queryRegex(path)
+    if requestpath.startswith('/groups'):
+        query = queryRegex(requestpath)
         ##print(query)
         return groupParser(lines, query)
     else:
