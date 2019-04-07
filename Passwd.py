@@ -13,4 +13,9 @@ print(r.text)
 r = requests.get('http://localhost:8000/groups')
 print(r.text)
 
+r = requests.get('http://localhost:8000/users/query%3Fname=root')
+print(r.text)
+r = requests.get('http://localhost:8000/groups/query%3Fmember=root&member=bin')
+print(r.text)
+
 RequestHandler.stopHTTPService()
