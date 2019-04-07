@@ -1,5 +1,7 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from FileHandler import GetContents
+from Utils import getUsers
+from Utils import getGroups
 
 httpd = None
 
@@ -15,22 +17,23 @@ class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         # Check path
         if self.path.startswith('/users'):
-            response = GetContents('e:/Andrew Documents/etcpasswd.txt', self.path)
+            userpath = getUsers()
+            response = GetContents(userpath, self.path)
             ## print("Looking for users, eh?")
             self._set_headers()
             self.wfile.write(str(response).encode())
             return
         elif self.path.startswith('/groups'):
+            grouppath = getGroups()
             ## print("Looking for groups? Me too")
-            response = GetContents('e:/Andrew Documents/etcgroup.txt', self.path)
+            response = GetContents(grouppath, self.path)
             self._set_headers()
             self.wfile.write(str(response).encode())
             return
-        else:
-            # otherwise return 404 not found
-            self.send_response(404)
-            self.end_headers()
-            self.wfile.write('{"error": "invalid path"}'.encode())
+        # otherwise return 404 not found
+        self.send_response(404)
+        self.end_headers()
+        self.wfile.write('{"error": "invalid path"}'.encode())
         return
 
     # POST
