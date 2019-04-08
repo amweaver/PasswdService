@@ -7,7 +7,7 @@ from Utils import regexFix
 def passwdParser(lines, query) -> typing.List:
     elements = []
     for line in lines:
-        #print(line)
+        line = line.rstrip()
         values = line.split(":")
         #print(values)
         if passwdValidate(values):
@@ -52,6 +52,7 @@ def passwdValidate(line) -> bool:
 def groupParser(lines, query) -> typing.List:
     elements = []
     for line in lines:
+        line = line.rstrip()
         values = line.split(":")
         #print(values)
         if groupValidate(values):
@@ -85,6 +86,8 @@ def groupValidate(line) -> bool:
 
 def queryCompare(entry, query) -> bool:
     for key in query:
+        if not entry[key]:
+            return False
         if isinstance(query[key], list):
             if not entry[key] or not isinstance(entry[key], list):
                 return False
@@ -99,6 +102,10 @@ def queryCompare(entry, query) -> bool:
 
 # this should work, but debugging it will be very hard
 def queryRegex(query) -> typing.Dict:
+    match = re.match('\A/users/(?P<uid>[0-9]+)\Z', query)
+    if match:
+        return regexFix(match.groupdict())
+
     match = re.match('\A/users' ## starts with users
                      '(/query%3F' ## optional query with the following format:
                      '(?P<name>name=\w+)?' ## name field, optional match
@@ -116,8 +123,12 @@ def queryRegex(query) -> typing.Dict:
                      query)
     if match:
         return regexFix(match.groupdict())
-    else:
-        match = re.match('\A/groups'  # start with groups
+
+    match = re.match('\A/groups/(?P<gid>[0-9]+)\Z', query)
+    if match:
+        return regexFix(match.groupdict())
+
+    match = re.match('\A/groups'  # start with groups
                          '(/query%3F'  # optional query with the following format
                          '(?P<name>name=\w+)?'  # name field, optional match
                          '(?(name)&(?=.))'  # if name is matched, add a & IF there are more fields
@@ -126,7 +137,8 @@ def queryRegex(query) -> typing.Dict:
                          '(?P<member>(member=\w+&?)+)?)'  # member field. End with & optionally. Can match multiple times
                          '?(?<!&)\Z',  # end optional field of query. & is not last char, end of string here
                          query)
-        if match:
-            #print("we did it reddit")
-            return regexFix(match.groupdict())
+    if match:
+        #print("we did it reddit")
+        return regexFix(match.groupdict())
+
     return {}
