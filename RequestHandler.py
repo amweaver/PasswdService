@@ -1,5 +1,6 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from FileHandler import GetContents
+from FileHandler import GetContentsSpecial
 from Utils import getUsers
 from Utils import getGroups
 
@@ -16,6 +17,13 @@ class RequestHandler(BaseHTTPRequestHandler):
     # GET
     def do_GET(self):
         # Check path
+        if self.path.startswith('/users/') and self.path.endswith('/groups'):
+            userpath = getUsers()
+            grouppath = getGroups()
+            response = GetContentsSpecial(userpath, grouppath, self.path)
+            self._set_headers()
+            self.wfile.write(str(response).encode())
+            return
         if self.path.startswith('/users'):
             userpath = getUsers()
             response = GetContents(userpath, self.path)
@@ -39,7 +47,7 @@ class RequestHandler(BaseHTTPRequestHandler):
     # POST
     def do_POST(self):
         # This service does not support POST requests
-        self.send_response(404)
+        self.send_response(500)
         self.wfile.write('{"error": "POST Requests not allowed"}'.encode())
         return
 
